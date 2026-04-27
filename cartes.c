@@ -1,63 +1,69 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> // OBLIGATOIRE pour malloc et free
 #include "cartes.h"
 
-// 1. FABRIQUER LE PAQUET
-void initialiser_paquet(Carte *paquet, int *taille) {
-    *taille = 0; // On commence avec un paquet vide
+// 1. FABRIQUER LE PAQUET (AVEC MALLOC)
+Carte* initialiser_paquet(int *taille) {
+    *taille = 0; 
+    
+    // Le vrai jeu Flip 7 a exactement 87 cartes.
+    // On demande à l'ordinateur de réserver de la mémoire pour 87 "moules" de Cartes.
+    Carte *paquet = malloc(87 * sizeof(Carte));
+    
+    // Sécurité obligatoire quand on utilise malloc : vérifier si ça a marché
+    if (paquet == NULL) {
+        printf("Erreur fatale : Plus de memoire disponible !\n");
+        exit(1); // Arrête le programme
+    }
 
-    // On fabrique les cartes normales (1 fois le 1, 2 fois le 2, etc.)
     int valeur, i;
     for (valeur = 1; valeur <= 12; valeur++) {
         for (i = 0; i < valeur; i++) {
             paquet[*taille].valeur = valeur;
             paquet[*taille].type = 0;
-            (*taille)++; // Le paquet grossit d'une carte
+            (*taille)++; 
         }
     }
 
-    // On fabrique les cartes spéciales (3 de chaque par exemple)
     for (i = 0; i < 3; i++) {
         paquet[*taille].valeur = 0; paquet[*taille].type = 1; (*taille)++; // STOP
         paquet[*taille].valeur = 0; paquet[*taille].type = 2; (*taille)++; // 2NDE CHANCE
         paquet[*taille].valeur = 0; paquet[*taille].type = 3; (*taille)++; // 3 A LA SUITE
     }
+    
+    // On renvoie l'adresse du paquet fraîchement créé
+    return paquet;
 }
 
-// 2. MÉLANGER LE PAQUET
+// 2. MÉLANGER LE PAQUET (Aucun changement)
 void melanger_paquet(Carte *paquet, int taille) {
     int i;
     for (i = 0; i < taille; i++) {
-        // On choisit une carte au hasard dans le paquet
         int hasard = rand() % taille;
-        
-        // On l'échange avec la carte actuelle (i)
         Carte carte_temporaire = paquet[i];
         paquet[i] = paquet[hasard];
         paquet[hasard] = carte_temporaire;
     }
 }
 
-// 3. PIOCHER LA CARTE DU DESSUS
+// 3. PIOCHER (Aucun changement)
 Carte piocher_carte(Carte *paquet, int *taille) {
-    // On diminue la taille du paquet de 1
     (*taille)--;
-    // On donne la carte qui était tout en haut
     return paquet[*taille];
 }
 
-// 4. L'AFFICHAGE (Ne change pas)
+// 4. L'AFFICHAGE (Couleurs retirées)
 void afficher_carte(Carte c) {
     if (c.type == 1) { 
-        printf("\033[1;31m  .------.\n  | STOP |\n  '------'\n\033[0m"); 
+        printf("  .------.\n  | STOP |\n  '------'\n"); 
     } 
     else if (c.type == 2) { 
-        printf("\033[1;32m  .------.\n  | 2NDE |\n  |CHANCE|\n  '------'\n\033[0m"); 
+        printf("  .------.\n  | 2NDE |\n  |CHANCE|\n  '------'\n"); 
     }
     else if (c.type == 3) { 
-        printf("\033[1;33m  .------.\n  |3 A LA|\n  |SUITE!|\n  '------'\n\033[0m"); 
+        printf("  .------.\n  |3 A LA|\n  |SUITE!|\n  '------'\n"); 
     }
     else { 
-        printf("\033[1;36m  .------.\n  |  %2d  |\n  '------'\n\033[0m", c.valeur); 
+        printf("  .------.\n  |  %2d  |\n  '------'\n", c.valeur); 
     }
 }
