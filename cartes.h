@@ -1,5 +1,3 @@
-// Fichier cartes.h
-// Contient uniquement les structures et les prototypes (Cours 01 et 08)
 
 typedef struct {
     int valeur;   
