@@ -1,171 +1,206 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <string.h> 
-#include "cartes.h"
+#include "cartes.h" 
 
 int main() {
     srand(time(NULL));
-    printf("=== BIENVENUE DANS FLIPTECH ===\n\n");
+    printf("=== BIENVENUE DANS FLIP 7 ===\n\n");
 
-    // --- ON UTILISE L'ALLOCATION DYNAMIQUE ---
-    int taille_du_paquet = 0;
-    // On reçoit le pointeur créé par le malloc dans la cuisine
-    Carte *le_paquet = initialiser_paquet(&taille_du_paquet); 
-    
-    melanger_paquet(le_paquet, taille_du_paquet);   
-    printf("(Le croupier a melange un paquet de %d cartes)\n\n", taille_du_paquet);
-
-    int mode_jeu = 0;
-    while (mode_jeu != 1 && mode_jeu != 2) {
-        printf("Choisissez votre mode de jeu :\n");
-        printf("1. Joueur vs Ordinateur (IA)\n");
-        printf("2. Multijoueur local (2 a 4 joueurs)\n");
-        printf("Votre choix : ");
-        scanf("%d", &mode_jeu);
-    }
-
-    Joueur liste_joueurs[4]; 
     int nb_joueurs = 0;
-    int p;
-
-    if (mode_jeu == 1) {
-        nb_joueurs = 2; 
-        printf("\nTon prenom : ");
-        scanf("%s", liste_joueurs[0].nom);
-        liste_joueurs[0].score = 0;
-        
-        strcpy(liste_joueurs[1].nom, "L'Ordinateur (IA)");
-        liste_joueurs[1].score = 0;
-    } 
-    else {
-        while (nb_joueurs < 2 || nb_joueurs > 4) {
-            printf("\nCombien de joueurs etes-vous ? (2 a 4) : ");
-            scanf("%d", &nb_joueurs);
-        }
-        for (p = 0; p < nb_joueurs; p++) {
-            printf("Prenom du joueur %d : ", p + 1);
-            scanf("%s", liste_joueurs[p].nom);         
-            liste_joueurs[p].score = 0;        
-        }
+    while (nb_joueurs < 2) {
+        printf("Combien de joueurs etes-vous ? (Minimum 2) : ");
+        scanf("%d", &nb_joueurs);
     }
 
-    printf("\n>>> QUE LA PARTIE COMMENCE ! <<<\n");
+    // Allocation dynamique (Tableaux dynamiques de structures)
+    Joueur *liste_joueurs = malloc(nb_joueurs * sizeof(Joueur));
+    if (liste_joueurs == NULL) {
+        printf("Erreur d'allocation memoire pour les joueurs.\n");
+        exit(1);
+    }
 
+    int p;
     for (p = 0; p < nb_joueurs; p++) {
-        
-        printf("\n------------------------------------------------\n");
-        printf("C'est a %s de jouer !\n", liste_joueurs[p].nom);
-        printf("------------------------------------------------\n");
+        printf("Prenom du joueur %d : ", p + 1);
+        scanf("%s", liste_joueurs[p].nom);         
+        liste_joueurs[p].score_total = 0;        
+    }
 
-        int choix = 1;
-        int score_tour = 0;
-        int cartes_en_main[15]; 
-        int nb_cartes = 0;      
-        int vies_en_plus = 0; 
-        int tours_forces = 0; 
+    int taille_du_paquet = 0;
+    Carte *le_paquet = initialiser_paquet(&taille_du_paquet);
+    melanger_paquet(le_paquet, taille_du_paquet);
+    
+    int stats_cartes[13];
+    int i;
+    for (i = 0; i < 13; i++) {
+        stats_cartes[i] = 0; 
+    }
 
-        int est_IA = 0;
-        if (mode_jeu == 1 && p == 1) {
-            est_IA = 1; 
+    int partie_en_cours = 1;
+    int manche = 1;
+
+    // --- BOUCLE DE LA PARTIE ---
+    while (partie_en_cours == 1) {
+        printf("\n\n=================================\n");
+        printf("         DEBUT MANCHE %d\n", manche);
+        printf("=================================\n");
+        printf("Cartes restantes dans la pioche : %d\n", taille_du_paquet);
+
+        int joueurs_en_lice = nb_joueurs;
+        for (p = 0; p < nb_joueurs; p++) {
+            liste_joueurs[p].en_jeu = 1;
+            liste_joueurs[p].score_manche = 0;
+            liste_joueurs[p].nb_cartes = 0;
+            liste_joueurs[p].bonus_plus = 0;
+            liste_joueurs[p].a_bonus_x2 = 0;
         }
 
-        while (choix == 1 && taille_du_paquet > 0) {
+        // --- BOUCLE DE LA MANCHE ---
+        int manche_en_cours = 1;
+        while (manche_en_cours == 1 && joueurs_en_lice > 0 && taille_du_paquet > 0) {
             
-            Carte ma_carte = piocher_carte(le_paquet, &taille_du_paquet);
-            
-            printf("\n%s pioche :\n", liste_joueurs[p].nom);
-            afficher_carte(ma_carte);
-
-            if (ma_carte.type == 1) { 
-                printf("\n>>> CARTE STOP ! Fin du tour, mais les points sont conserves ! <<<\n");
-                choix = 0; 
-                tours_forces = 0;
-            }
-            else if (ma_carte.type == 2) { 
-                printf("SUPER ! %s gagne une vie supplementaire !\n", liste_joueurs[p].nom);
-                vies_en_plus++;
-            }
-            else if (ma_carte.type == 3) { 
-                printf("AIE ! %s est oblige(e) de piocher 3 cartes de suite !\n", liste_joueurs[p].nom);
-                tours_forces = tours_forces + 3; 
-            }
-            else { 
-                int a_perdu = 0; 
-                int i;
-                for (i = 0; i < nb_cartes; i++) {
-                    if (cartes_en_main[i] == ma_carte.valeur) {
-                        a_perdu = 1; 
-                    }
-                }
-
-                if (a_perdu == 1) {
-                    if (vies_en_plus > 0) {
-                        printf("OUF ! La 2nde chance sauve du %d !\n", ma_carte.valeur);
-                        vies_en_plus--;
-                    } else {
-                        printf("OH NON ! Deja un %d. %s a brule !\n", ma_carte.valeur, liste_joueurs[p].nom);
-                        score_tour = 0; 
-                        choix = 0;   
-                        tours_forces = 0; 
-                    }   
-                } 
-                else {
-                    cartes_en_main[nb_cartes] = ma_carte.valeur;
-                    nb_cartes++; 
-                    score_tour += ma_carte.valeur;
-                    printf("Score actuel de %s : %d\n", liste_joueurs[p].nom, score_tour);
-                }
-            }
-
-            if (choix == 1) {
-                if (tours_forces > 0) {
-                    printf("\n(Tirage(s) force(s) restant(s) : %d...)\n", tours_forces);
-                    tours_forces--; 
-                } 
-                else {
-                    if (est_IA == 1) {
-                        if (score_tour >= 15) {
-                            printf("L'Ordinateur decide de S'ARRETER.\n");
-                            choix = 0;
-                        } else {
-                            printf("L'Ordinateur decide de CONTINUER.\n");
-                            choix = 1;
-                        }
+            for (p = 0; p < nb_joueurs; p++) {
+                
+                // On remplace le "continue" et le "break" par des conditions if
+                if (manche_en_cours == 1 && liste_joueurs[p].en_jeu == 1) {
+                    
+                    if (taille_du_paquet == 0) {
+                        printf("\nLA PIOCHE EST VIDE ! Fin immediate de la manche.\n");
+                        manche_en_cours = 0; // Remplace le break
                     } 
                     else {
-                        printf("Veux-tu piocher une autre carte ? (1 = OUI, 0 = NON) : ");
-                        scanf("%d", &choix); 
+                        printf("\n------------------------------------------------\n");
+                        printf("Tour de %s (Score temporaire: %d)\n", liste_joueurs[p].nom, liste_joueurs[p].score_manche);
+                        
+                        int choix = 0;
+                        while (choix != 1 && choix != 2) {
+                            printf("1. Piocher | 2. S'arreter | 3. Voir Statistiques : ");
+                            scanf("%d", &choix);
+
+                            if (choix == 3) {
+                                afficher_statistiques(stats_cartes);
+                                choix = 0;
+                            }
+                        }
+
+                        if (choix == 2) {
+                            printf("%s s'arrete et securise ses points.\n", liste_joueurs[p].nom);
+                            liste_joueurs[p].en_jeu = 0;
+                            joueurs_en_lice--;
+                        } 
+                        else if (choix == 1) {
+                            Carte ma_carte = piocher_carte(le_paquet, &taille_du_paquet);
+                            afficher_carte(ma_carte);
+
+                            if (ma_carte.type == 1) { 
+                                liste_joueurs[p].bonus_plus = liste_joueurs[p].bonus_plus + ma_carte.valeur;
+                                printf("Bonus +%d ajoute !\n", ma_carte.valeur);
+                            } 
+                            else if (ma_carte.type == 2) { 
+                                liste_joueurs[p].a_bonus_x2 = 1;
+                                printf("Bonus multiplicateur x2 obtenu !\n");
+                            } 
+                            else { 
+                                stats_cartes[ma_carte.valeur]++; 
+                                int a_perdu = 0;
+                                int c;
+                                
+                                for (c = 0; c < liste_joueurs[p].nb_cartes; c++) {
+                                    if (liste_joueurs[p].cartes_main[c] == ma_carte.valeur) {
+                                        a_perdu = 1;
+                                    }
+                                }
+
+                                if (a_perdu == 1) {
+                                    printf("BOUUM ! %s a deja un %d et perd tout !\n", liste_joueurs[p].nom, ma_carte.valeur);
+                                    liste_joueurs[p].score_manche = 0;
+                                    liste_joueurs[p].bonus_plus = 0;
+                                    liste_joueurs[p].a_bonus_x2 = 0;
+                                    liste_joueurs[p].en_jeu = 0;
+                                    joueurs_en_lice--;
+                                } else {
+                                    liste_joueurs[p].cartes_main[liste_joueurs[p].nb_cartes] = ma_carte.valeur;
+                                    liste_joueurs[p].nb_cartes++;
+                                    liste_joueurs[p].score_manche = liste_joueurs[p].score_manche + ma_carte.valeur;
+                                    printf("Score facial actuel : %d\n", liste_joueurs[p].score_manche);
+
+                                    // Condition FLIP 7
+                                    if (liste_joueurs[p].nb_cartes == 7) {
+                                        printf("\n!!! FLIP 7 !!! %s a 7 cartes differentes !\n", liste_joueurs[p].nom);
+                                        liste_joueurs[p].score_manche = liste_joueurs[p].score_manche + 15;
+                                        manche_en_cours = 0; // Remplace le break
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         } 
 
-        liste_joueurs[p].score = score_tour;
-        printf("\nFin du tour de %s. Score final : %d points.\n", liste_joueurs[p].nom, liste_joueurs[p].score);
+        printf("\n--- FIN DE LA MANCHE %d ---\n", manche);
+        for (p = 0; p < nb_joueurs; p++) {
+            if (liste_joueurs[p].score_manche > 0 || liste_joueurs[p].bonus_plus > 0) {
+                if (liste_joueurs[p].a_bonus_x2 == 1) {
+                    liste_joueurs[p].score_manche = liste_joueurs[p].score_manche * 2;
+                }
+                liste_joueurs[p].score_manche = liste_joueurs[p].score_manche + liste_joueurs[p].bonus_plus;
+            }
+            liste_joueurs[p].score_total = liste_joueurs[p].score_total + liste_joueurs[p].score_manche;
+            printf("%s gagne %d points (Total: %d)\n", liste_joueurs[p].nom, liste_joueurs[p].score_manche, liste_joueurs[p].score_total);
+            
+            if (liste_joueurs[p].score_total >= 200 || taille_du_paquet == 0) {
+                partie_en_cours = 0;
+            }
+        }
+        manche++;
     } 
 
+    // --- FIN DE PARTIE & FICHIERS ---
     printf("\n\n======= FIN DE LA PARTIE =======\n");
     int score_max = -1;
     char nom_gagnant[50];
 
     for (p = 0; p < nb_joueurs; p++) {
-        printf("%s a fait %d points.\n", liste_joueurs[p].nom, liste_joueurs[p].score);
-        if (liste_joueurs[p].score > score_max) {
-            score_max = liste_joueurs[p].score;
-            int i = 0;
-            while(liste_joueurs[p].nom[i] != '\0') {
-                nom_gagnant[i] = liste_joueurs[p].nom[i];
-                i++;
+        if (liste_joueurs[p].score_total > score_max) {
+            score_max = liste_joueurs[p].score_total;
+            
+            // On utilise la boucle while pour copier le string (au lieu de strcpy)
+            int k = 0;
+            while(liste_joueurs[p].nom[k] != '\0') {
+                nom_gagnant[k] = liste_joueurs[p].nom[k];
+                k++;
             }
-            nom_gagnant[i] = '\0';
+            nom_gagnant[k] = '\0';
         }
     }
-    printf("\nLE GAGNANT EST %s AVEC %d POINTS ! BRAVO !\n", nom_gagnant, score_max);
+    printf("LE GAGNANT EST %s AVEC %d POINTS !\n", nom_gagnant, score_max);
 
-    // --- TRÈS IMPORTANT : ON LIBÈRE LA MÉMOIRE AVANT DE QUITTER ---
-    free(le_paquet); 
-    // --------------------------------------------------------------
+    int save;
+    printf("\nVoulez-vous sauvegarder les scores ? (1 = Oui, 0 = Non) : ");
+    scanf("%d", &save);
+    
+    if (save == 1) {
+        char nom_fichier[100];
+        printf("Nom du fichier (ex: scores.txt) : ");
+        scanf("%s", nom_fichier);
+        
+        FILE *fichier = fopen(nom_fichier, "w");
+        if (fichier != NULL) {
+            fprintf(fichier, "--- RESULTATS FLIP 7 ---\n");
+            for (p = 0; p < nb_joueurs; p++) {
+                fprintf(fichier, "%s : %d points\n", liste_joueurs[p].nom, liste_joueurs[p].score_total);
+            }
+            fclose(fichier);
+            printf("Scores sauvegardes avec succes dans %s !\n", nom_fichier);
+        } else {
+            printf("Erreur lors de la creation du fichier.\n");
+        }
+    }
+
+    free(le_paquet);
+    free(liste_joueurs);
 
     return 0;
 }

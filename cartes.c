@@ -1,69 +1,83 @@
 #include <stdio.h>
-#include <stdlib.h> // OBLIGATOIRE pour malloc et free
+#include <stdlib.h>
 #include "cartes.h"
 
-// 1. FABRIQUER LE PAQUET (AVEC MALLOC)
+// Generation dynamique des 85 cartes du jeu de base (avec malloc)
 Carte* initialiser_paquet(int *taille) {
     *taille = 0; 
+    Carte *paquet = malloc(85 * sizeof(Carte));
     
-    // Le vrai jeu Flip 7 a exactement 87 cartes.
-    // On demande à l'ordinateur de réserver de la mémoire pour 87 "moules" de Cartes.
-    Carte *paquet = malloc(87 * sizeof(Carte));
-    
-    // Sécurité obligatoire quand on utilise malloc : vérifier si ça a marché
     if (paquet == NULL) {
-        printf("Erreur fatale : Plus de memoire disponible !\n");
-        exit(1); // Arrête le programme
+        printf("Erreur d'allocation memoire pour le paquet.\n");
+        exit(1);
     }
 
-    int valeur, i;
-    for (valeur = 1; valeur <= 12; valeur++) {
-        for (i = 0; i < valeur; i++) {
-            paquet[*taille].valeur = valeur;
-            paquet[*taille].type = 0;
-            (*taille)++; 
+    int i, j;
+    
+    // 1. Les 79 cartes numeros
+    for (i = 0; i <= 1; i++) {
+        paquet[*taille].valeur = i; 
+        paquet[*taille].type = 0; 
+        (*taille)++;
+    }
+    for (i = 2; i <= 12; i++) {
+        for (j = 0; j < i; j++) {
+            paquet[*taille].valeur = i; 
+            paquet[*taille].type = 0; 
+            (*taille)++;
         }
     }
 
-    for (i = 0; i < 3; i++) {
-        paquet[*taille].valeur = 0; paquet[*taille].type = 1; (*taille)++; // STOP
-        paquet[*taille].valeur = 0; paquet[*taille].type = 2; (*taille)++; // 2NDE CHANCE
-        paquet[*taille].valeur = 0; paquet[*taille].type = 3; (*taille)++; // 3 A LA SUITE
+    // 2. Les 6 cartes bonus
+    paquet[*taille].valeur = 2; 
+    paquet[*taille].type = 2; 
+    (*taille)++; // x2
+    
+    int bonus_plus_vals[5] = {2, 4, 6, 8, 10};
+    for (i = 0; i < 5; i++) {
+        paquet[*taille].valeur = bonus_plus_vals[i]; 
+        paquet[*taille].type = 1; 
+        (*taille)++;
     }
     
-    // On renvoie l'adresse du paquet fraîchement créé
     return paquet;
 }
 
-// 2. MÉLANGER LE PAQUET (Aucun changement)
+// Melange du paquet
 void melanger_paquet(Carte *paquet, int taille) {
     int i;
-    for (i = 0; i < taille; i++) {
-        int hasard = rand() % taille;
-        Carte carte_temporaire = paquet[i];
+    for (i = taille - 1; i > 0; i--) {
+        int hasard = rand() % (i + 1);
+        Carte temp = paquet[i];
         paquet[i] = paquet[hasard];
-        paquet[hasard] = carte_temporaire;
+        paquet[hasard] = temp;
     }
 }
 
-// 3. PIOCHER (Aucun changement)
+// Piocher (on reduit simplement la taille avec le pointeur)
 Carte piocher_carte(Carte *paquet, int *taille) {
     (*taille)--;
     return paquet[*taille];
 }
 
-// 4. L'AFFICHAGE (Couleurs retirées)
+// Affichage 
 void afficher_carte(Carte c) {
-    if (c.type == 1) { 
-        printf("  .------.\n  | STOP |\n  '------'\n"); 
-    } 
-    else if (c.type == 2) { 
-        printf("  .------.\n  | 2NDE |\n  |CHANCE|\n  '------'\n"); 
-    }
-    else if (c.type == 3) { 
-        printf("  .------.\n  |3 A LA|\n  |SUITE!|\n  '------'\n"); 
-    }
-    else { 
+    if (c.type == 0) {
         printf("  .------.\n  |  %2d  |\n  '------'\n", c.valeur); 
+    } else if (c.type == 1) {
+        printf("  .------.\n  |  +%2d |\n  '------'\n", c.valeur); 
+    } else if (c.type == 2) {
+        printf("  .------.\n  |  x2  |\n  '------'\n"); 
     }
+}
+
+// Statistiques demandees
+void afficher_statistiques(int *stats) {
+    printf("\n--- STATISTIQUES DES CARTES TIREES ---\n");
+    int i;
+    for (i = 0; i <= 12; i++) {
+        int max_cartes = (i <= 1) ? 1 : i; 
+        printf("Carte %2d : %d / %d tirees\n", i, stats[i], max_cartes);
+    }
+    printf("--------------------------------------\n");
 }
